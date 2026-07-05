@@ -1,0 +1,37 @@
+{
+  "name": "print-readable",
+  "description": "A4 page optimized for printing with slightly larger font",
+  "page": {
+    "width": 595,
+    "height": 842
+  },
+  "margins": {
+    "top": 60,
+    "bottom": 60,
+    "left": 55,
+    "right": 55
+  },
+  "body_text": {
+    "font_size": 13,
+    "line_height": 1.6,
+    "color": [0, 0, 0]
+  },
+  "heading_scale": {
+    "h1": 1.8,
+    "h2": 1.4,
+    "h3": 1.2
+  },
+  "watermark": {
+    "font_size": 22,
+    "opacity": 0.2,
+    "angle": 45,
+    "color": [0.75, 0.75, 0.75],
+    "spacing": 220
+  },
+  "footer": {
+    "enabled": true,
+    "font_size": 8,
+    "opacity": 0.5,
+    "color": [0.4, 0.4, 0.4]
+  }
+}

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuscript Protector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 700px; margin: 0 auto; }
+        h1 { text-align: center; margin: 20px 0 10px; font-size: 28px; color: #e94560; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
+
+        .card {
+            background: #16213e; border-radius: 12px; padding: 24px;
+            margin-bottom: 20px; border: 1px solid #0f3460;
+        }
+
+        /* Drop zone */
+        .dropzone {
+            border: 2px dashed #0f3460; border-radius: 8px; padding: 40px;
+            text-align: center; cursor: pointer; transition: all 0.3s;
+            margin-bottom: 16px;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            border-color: #e94560; background: rgba(233, 69, 96, 0.05);
+        }
+        .dropzone-icon { font-size: 48px; margin-bottom: 10px; }
+        .dropzone-text { font-size: 16px; color: #aaa; }
+        .dropzone-hint { font-size: 12px; color: #666; margin-top: 8px; }
+        #fileInput { display: none; }
+        .file-info {
+            display: none; background: #0f3460; border-radius: 8px;
+            padding: 12px 16px; margin-bottom: 16px; font-size: 14px;
+        }
+        .file-info.show { display: block; }
+        .file-info .name { font-weight: bold; color: #e94560; }
+        .file-info .size { color: #888; margin-left: 10px; }
+
+        /* Form fields */
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block; font-size: 13px; color: #aaa;
+            margin-bottom: 6px; font-weight: 500;
+        }
+        .field input, .field select {
+            width: 100%; padding: 10px 14px; font-size: 15px;
+            background: #1a1a2e; border: 1px solid #0f3460;
+            border-radius: 6px; color: #eee; outline: none;
+            transition: border-color 0.2s;
+        }
+        .field input:focus, .field select:focus { border-color: #e94560; }
+        .field input::placeholder { color: #555; }
+        .field .hint { font-size: 11px; color: #666; margin-top: 4px; }
+
+        .row { display: flex; gap: 16px; }
+        .row .field { flex: 1; }
+
+        .checkbox-field {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .checkbox-field input { width: 18px; height: 18px; cursor: pointer; }
+        .checkbox-field label { margin: 0; cursor: pointer; font-size: 14px; }
+
+        /* Button */
+        .btn-protect {
+            width: 100%; padding: 16px; font-size: 18px; font-weight: bold;
+            background: #e94560; color: white; border: none;
+            border-radius: 8px; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-protect:hover { background: #c73650; }
+        .btn-protect:disabled { background: #555; cursor: not-allowed; }
+
+        /* Results */
+        .result {
+            display: none; background: #0f3460; border-radius: 8px;
+            padding: 20px; margin-top: 20px;
+        }
+        .result.show { display: block; }
+        .result h3 { color: #4ecca3; margin-bottom: 12px; font-size: 18px; }
+        .result-table { width: 100%; font-size: 14px; }
+        .result-table td { padding: 4px 0; }
+        .result-table td:first-child { color: #888; width: 40%; }
+        .result-table td:last-child { color: #eee; font-weight: 500; word-break: break-all; }
+        .result-actions { margin-top: 16px; display: flex; gap: 12px; }
+        .btn-download {
+            flex: 1; padding: 12px; text-align: center; font-size: 15px;
+            background: #4ecca3; color: #1a1a2e; border: none;
+            border-radius: 6px; cursor: pointer; text-decoration: none;
+            font-weight: bold; transition: background 0.2s;
+        }
+        .btn-download:hover { background: #3db88c; }
+
+        /* Error */
+        .error {
+            display: none; background: #e94560; color: white;
+            border-radius: 8px; padding: 14px; margin-top: 16px;
+            font-size: 14px;
+        }
+        .error.show { display: block; }
+
+        /* Loading */
+        .loading {
+            display: none; text-align: center; padding: 20px;
+            color: #aaa; font-size: 16px;
+        }
+        .loading.show { display: block; }
+        .spinner {
+            display: inline-block; width: 24px; height: 24px;
+            border: 3px solid #0f3460; border-top-color: #e94560;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin-right: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer { text-align: center; color: #555; font-size: 12px; margin-top: 30px; }
+
+        /* Preview */
+        .btn-preview {
+            width: 100%; padding: 12px; font-size: 15px; font-weight: bold;
+            background: #0f3460; color: #4ecca3; border: 1px solid #0f3460;
+            border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-top: 8px;
+        }
+        .btn-preview:hover { background: #1a4a80; }
+        .btn-preview:disabled { opacity: 0.5; cursor: not-allowed; }
+        .preview-container {
+            background: #fff; border-radius: 8px; padding: 8px;
+            text-align: center; overflow: auto; max-height: 700px;
+        }
+        .preview-container img {
+            max-width: 100%; height: auto; border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .preview-loading {
+            text-align: center; padding: 40px; color: #aaa; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manuscript Protector</h1>
+        <p class="subtitle">Watermark · Encrypt · Protect — by D155 Makima</p>
+
+        <!-- File Upload -->
+        <div class="card">
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                <div class="dropzone-icon">📄</div>
+                <div class="dropzone-text">Drag & drop a file here, or click to browse</div>
+                <div class="dropzone-hint">Supports: .md, .txt, .pdf</div>
+            </div>
+            <input type="file" id="fileInput" accept=".md,.txt,.pdf">
+            <div class="file-info" id="fileInfo">
+                <span class="name" id="fileName"></span>
+                <span class="size" id="fileSize"></span>
+            </div>
+        </div>
+
+        <!-- Parameters -->
+        <div class="card">
+            <div class="row">
+                <div class="field">
+                    <label>Receiver Name *</label>
+                    <input type="text" id="consultant" placeholder="e.g. Alice" value="Alice">
+                </div>
+                <div class="field">
+                    <label>Version *</label>
+                    <input type="text" id="version" placeholder="e.g. v1" value="v1">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Password *</label>
+                    <input type="password" id="password" placeholder="Enter password" oninput="checkPasswordMatch()">
+                    <div class="hint">Password is never written to receipt, logs, or metadata</div>
+                </div>
+                <div class="field">
+                    <label>Confirm Password *</label>
+                    <input type="password" id="passwordConfirm" placeholder="Re-enter password" oninput="checkPasswordMatch()">
+                    <div class="hint" id="passwordMatchHint" style="color:#666;">Type password twice to confirm</div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Watermark Text (optional)</label>
+                <input type="text" id="watermarkText" placeholder="Leave blank for auto: consultant | ID | date | version"
+                       oninput="updateWatermarkInfo()">
+                <div class="hint" id="watermarkHint">Auto-split into multiple lines if long. Keep under 60 chars for best results.</div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Profile</label>
+                    <select id="profile">
+                        <option value="">Default (A4, 12pt)</option>
+                        <option value="mobile" selected>Mobile (A5, 14pt, 150 DPI)</option>
+                        <option value="print">Print (A4, 13pt)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Confidentiality Label</label>
+                    <input type="text" id="label" value="Confidential">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Encryption</label>
+                    <select id="encryption">
+                        <option value="aes128" selected>AES-128 (macOS Preview compatible)</option>
+                        <option value="aes256">AES-256 (stronger, may not open in Preview)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>DPI (override)</label>
+                    <input type="number" id="dpi" placeholder="from profile" min="72" max="400">
+                    <div class="hint">Lower = smaller file. Mobile default: 150</div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>JPEG Quality (override): <span id="qualityValue">80</span></label>
+                <input type="range" id="jpegQuality" min="30" max="100" value="80"
+                       oninput="document.getElementById('qualityValue').textContent=this.value">
+                <div class="hint">Lower = smaller file. 80 default, 60 = ~200KB/page, 40 = ~100KB/page</div>
+            </div>
+
+            <div class="checkbox-field">
+                <input type="checkbox" id="allowPrint">
+                <label for="allowPrint">Allow printing</label>
+            </div>
+        </div>
+
+        <!-- Font & Layout Customization -->
+        <div class="card">
+            <h3 style="color:#e94560; margin-bottom:16px; font-size:16px;">Font & Layout Customization</h3>
+            <div class="hint" style="margin-bottom:12px;">Override profile defaults. Leave blank to use profile values. Click Preview to see the result.</div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Font Size (pt)</label>
+                    <input type="number" id="fontSize" placeholder="from profile" min="8" max="32">
+                </div>
+                <div class="field">
+                    <label>Line Height</label>
+                    <input type="number" id="lineHeight" placeholder="from profile" min="1.0" max="3.0" step="0.1">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Margin Top (pt)</label>
+                    <input type="number" id="marginTop" placeholder="from profile" min="10" max="120">
+                </div>
+                <div class="field">
+                    <label>Margin Bottom (pt)</label>
+                    <input type="number" id="marginBottom" placeholder="from profile" min="10" max="120">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>Margin Left (pt)</label>
+                    <input type="number" id="marginLeft" placeholder="from profile" min="10" max="120">
+                </div>
+                <div class="field">
+                    <label>Margin Right (pt)</label>
+                    <input type="number" id="marginRight" placeholder="from profile" min="10" max="120">
+                </div>
+            </div>
+
+            <h3 style="color:#e94560; margin:16px 0 12px; font-size:16px;">Watermark Customization</h3>
+
+            <div class="row">
+                <div class="field">
+                    <label>WM Font Size (pt)</label>
+                    <input type="number" id="wmFontSize" placeholder="from profile" min="6" max="40">
+                </div>
+                <div class="field">
+                    <label>WM Opacity</label>
+                    <input type="number" id="wmOpacity" placeholder="from profile" min="0.05" max="0.8" step="0.05">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label>WM Angle (degrees)</label>
+                    <input type="number" id="wmAngle" placeholder="from profile" min="0" max="90">
+                </div>
+                <div class="field">
+                    <label>WM Spacing (pt)</label>
+                    <input type="number" id="wmSpacing" placeholder="from profile" min="80" max="400">
+                </div>
+            </div>
+
+            <div class="checkbox-field">
+                <input type="checkbox" id="footerEnabled" checked>
+                <label for="footerEnabled">Show footer watermark</label>
+            </div>
+
+            <button class="btn-preview" id="previewBtn" onclick="generatePreview()">
+                Preview Sample Page
+            </button>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="card" id="previewCard" style="display:none;">
+            <h3 style="color:#4ecca3; margin-bottom:12px; font-size:16px;">Preview — Sample Page 1</h3>
+            <div class="preview-container">
+                <img id="previewImg" alt="Preview not loaded">
+            </div>
+            <div class="hint" id="previewHint" style="margin-top:8px;">This is a sample page with your current settings. Adjust and preview again, or protect your file above.</div>
+        </div>
+
+        <!-- Execute -->
+        <button class="btn-protect" id="protectBtn" onclick="protectFile()" disabled>
+            Protect Manuscript
+        </button>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <span class="spinner"></span> Protecting... please wait
+        </div>
+
+        <!-- Error -->
+        <div class="error" id="error"></div>
+
+        <!-- Result -->
+        <div class="result" id="result">
+            <h3>✓ Protection Complete</h3>
+            <table class="result-table" id="resultTable"></table>
+            <div class="result-actions">
+                <a class="btn-download" id="downloadPdf" href="#">Download PDF</a>
+                <a class="btn-download" id="downloadReceipt" href="#" style="background:#0f3460; color:#4ecca3;">Download Receipt</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            Manuscript Protector v1 · D155 Makima · Local only — no cloud upload · AES-128 default
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function checkPasswordMatch() {
+            const pw = document.getElementById('password').value;
+            const pw2 = document.getElementById('passwordConfirm').value;
+            const hint = document.getElementById('passwordMatchHint');
+            if (!pw && !pw2) {
+                hint.textContent = 'Type password twice to confirm';
+                hint.style.color = '#666';
+            } else if (pw === pw2) {
+                hint.textContent = '✓ Passwords match';
+                hint.style.color = '#4ecca3';
+            } else {
+                hint.textContent = '✗ Passwords do not match';
+                hint.style.color = '#e94560';
+            }
+        }
+
+        function updateWatermarkInfo() {
+            const text = document.getElementById('watermarkText').value;
+            const hint = document.getElementById('watermarkHint');
+            if (!text) {
+                hint.textContent = 'Auto-split into multiple lines if long. Keep under 60 chars for best results.';
+                hint.style.color = '#666';
+                return;
+            }
+            const len = text.length;
+            const lines = Math.ceil(len / 20);
+            if (len <= 30) {
+                hint.textContent = `${len} chars → 1 line. Good length.`;
+                hint.style.color = '#4ecca3';
+            } else if (len <= 60) {
+                hint.textContent = `${len} chars → ${lines} lines. OK.`;
+                hint.style.color = '#aaa';
+            } else {
+                hint.textContent = `${len} chars → ${lines} lines. Consider shortening for cleaner watermark.`;
+                hint.style.color = '#e94560';
+            }
+        }
+
+        // Drag & drop
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault(); dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['md', 'txt', 'pdf'].includes(ext)) {
+                showError(`Unsupported file type: .${ext}. Use .md, .txt, or .pdf`);
+                return;
+            }
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatSize(file.size);
+            document.getElementById('fileInfo').classList.add('show');
+            document.getElementById('protectBtn').disabled = false;
+            hideError(); hideResult();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+            return (bytes/1048576).toFixed(2) + ' MB';
+        }
+
+        async function protectFile() {
+            if (!selectedFile) return;
+
+            const consultant = document.getElementById('consultant').value.trim();
+            const password = document.getElementById('password').value;
+            const version = document.getElementById('version').value.trim();
+
+            if (!consultant) { showError('Receiver name is required'); return; }
+            if (!password) { showError('Password is required'); return; }
+            if (!version) { showError('Version is required'); return; }
+
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            if (password !== passwordConfirm) {
+                showError('Passwords do not match'); return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('protectBtn').disabled = true;
+            hideError(); hideResult();
+
+            // Build form data
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('consultant', consultant);
+            formData.append('version', version);
+            formData.append('password', password);
+            formData.append('watermark_text', document.getElementById('watermarkText').value);
+            formData.append('label', document.getElementById('label').value);
+            formData.append('profile', document.getElementById('profile').value);
+            formData.append('encryption', document.getElementById('encryption').value);
+            formData.append('allow_print', document.getElementById('allowPrint').checked ? 'true' : 'false');
+
+            const dpi = document.getElementById('dpi').value;
+            if (dpi) formData.append('dpi', dpi);
+            formData.append('jpeg_quality', document.getElementById('jpegQuality').value);
+
+            // Pass font/layout/watermark customization overrides to protect API
+            const fontSize = document.getElementById('fontSize').value;
+            const lineHeight = document.getElementById('lineHeight').value;
+            const marginTop = document.getElementById('marginTop').value;
+            const marginBottom = document.getElementById('marginBottom').value;
+            const marginLeft = document.getElementById('marginLeft').value;
+            const marginRight = document.getElementById('marginRight').value;
+            const wmFontSize = document.getElementById('wmFontSize').value;
+            const wmOpacity = document.getElementById('wmOpacity').value;
+            const wmAngle = document.getElementById('wmAngle').value;
+            const wmSpacing = document.getElementById('wmSpacing').value;
+            const footerEnabled = document.getElementById('footerEnabled').checked;
+
+            if (fontSize) formData.append('font_size', fontSize);
+            if (lineHeight) formData.append('line_height', lineHeight);
+            if (marginTop) formData.append('margin_top', marginTop);
+            if (marginBottom) formData.append('margin_bottom', marginBottom);
+            if (marginLeft) formData.append('margin_left', marginLeft);
+            if (marginRight) formData.append('margin_right', marginRight);
+            if (wmFontSize) formData.append('wm_font_size', wmFontSize);
+            if (wmOpacity) formData.append('wm_opacity', wmOpacity);
+            if (wmAngle) formData.append('wm_angle', wmAngle);
+            if (wmSpacing) formData.append('wm_spacing', wmSpacing);
+            formData.append('footer_enabled', footerEnabled ? 'true' : 'false');
+
+            try {
+                const response = await fetch('/api/protect', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('protectBtn').disabled = false;
+
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    showResult(data);
+                }
+            } catch (err) {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('protectBtn').disabled = false;
+                showError('Connection error: ' + err.message);
+            }
+        }
+
+        function showResult(data) {
+            const table = document.getElementById('resultTable');
+            table.innerHTML = `
+                <tr><td>Output file</td><td>${data.output_filename}</td></tr>
+                <tr><td>Pages</td><td>${data.page_count}</td></tr>
+                <tr><td>File size</td><td>${data.file_size_mb} MB (${data.per_page_kb} KB/page)</td></tr>
+                <tr><td>DPI / JPEG quality</td><td>${data.dpi} / ${data.jpeg_quality}</td></tr>
+                <tr><td>Encryption</td><td>${data.encryption}</td></tr>
+                <tr><td>Tracking ID</td><td>${data.tracking_id}</td></tr>
+                <tr><td>Watermark</td><td>${data.watermark_text}</td></tr>
+                <tr><td>Source SHA-256</td><td>${data.source_sha256.substring(0,24)}...</td></tr>
+                <tr><td>Output SHA-256</td><td>${data.output_sha256.substring(0,24)}...</td></tr>
+                <tr><td>Source untouched</td><td>${data.source_untouched ? '✓ Yes' : '✗ NO'}</td></tr>
+            `;
+            document.getElementById('downloadPdf').href = data.download_url;
+            document.getElementById('downloadReceipt').href = data.receipt_url;
+            document.getElementById('result').classList.add('show');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error');
+            el.textContent = msg; el.classList.add('show');
+        }
+        function hideError() { document.getElementById('error').classList.remove('show'); }
+        function hideResult() { document.getElementById('result').classList.remove('show'); }
+
+        async function generatePreview() {
+            const previewBtn = document.getElementById('previewBtn');
+            const previewCard = document.getElementById('previewCard');
+            const previewImg = document.getElementById('previewImg');
+            const previewHint = document.getElementById('previewHint');
+
+            previewBtn.disabled = true;
+            previewBtn.textContent = 'Generating preview...';
+            previewCard.style.display = 'block';
+            previewImg.style.display = 'none';
+            previewHint.textContent = 'Generating preview...';
+
+            const formData = new FormData();
+            formData.append('profile', document.getElementById('profile').value);
+            formData.append('watermark_text', document.getElementById('watermarkText').value || 'LEO REVIEW COPY');
+
+            // Optional overrides
+            const fontSize = document.getElementById('fontSize').value;
+            const lineHeight = document.getElementById('lineHeight').value;
+            const marginTop = document.getElementById('marginTop').value;
+            const marginBottom = document.getElementById('marginBottom').value;
+            const marginLeft = document.getElementById('marginLeft').value;
+            const marginRight = document.getElementById('marginRight').value;
+            const wmFontSize = document.getElementById('wmFontSize').value;
+            const wmOpacity = document.getElementById('wmOpacity').value;
+            const wmAngle = document.getElementById('wmAngle').value;
+            const wmSpacing = document.getElementById('wmSpacing').value;
+            const footerEnabled = document.getElementById('footerEnabled').checked;
+
+            if (fontSize) formData.append('font_size', fontSize);
+            if (lineHeight) formData.append('line_height', lineHeight);
+            if (marginTop) formData.append('margin_top', marginTop);
+            if (marginBottom) formData.append('margin_bottom', marginBottom);
+            if (marginLeft) formData.append('margin_left', marginLeft);
+            if (marginRight) formData.append('margin_right', marginRight);
+            if (wmFontSize) formData.append('wm_font_size', wmFontSize);
+            if (wmOpacity) formData.append('wm_opacity', wmOpacity);
+            if (wmAngle) formData.append('wm_angle', wmAngle);
+            if (wmSpacing) formData.append('wm_spacing', wmSpacing);
+            formData.append('footer_enabled', footerEnabled ? 'true' : 'false');
+
+            try {
+                const response = await fetch('/api/preview', { method: 'POST', body: formData });
+                const contentType = response.headers.get('content-type');
+
+                if (contentType && contentType.includes('image/png')) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    previewImg.src = url;
+                    previewImg.style.display = 'block';
+                    previewImg.onload = () => URL.revokeObjectURL(url);
+                    previewHint.textContent = 'Sample page(s) with your current settings. Adjust values above and preview again, or protect your file.';
+                    previewHint.style.color = '#666';
+                } else {
+                    const data = await response.json();
+                    previewHint.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    previewHint.style.color = '#e94560';
+                }
+            } catch (err) {
+                previewHint.textContent = 'Connection error: ' + err.message;
+                previewHint.style.color = '#e94560';
+            }
+
+            previewBtn.disabled = false;
+            previewBtn.textContent = 'Preview Sample Page';
+        }
+    </script>
+</body>
+</html>

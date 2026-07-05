@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "dpi": 200,
+  "allow_print": false,
+  "font_path": null,
+  "consultants": [
+    {
+      "name": "Consultant One",
+      "password": "CHANGE_ME_pw1",
+      "tracking_id": null
+    },
+    {
+      "name": "Consultant Two",
+      "password": "CHANGE_ME_pw2",
+      "tracking_id": "LT-MS-001-CT"
+    },
+    {
+      "name": "Consultant Three",
+      "password": "CHANGE_ME_pw3",
+      "tracking_id": null
+    }
+  ]
+}

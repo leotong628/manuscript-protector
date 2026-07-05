@@ -1,0 +1,11 @@
+Test sample file for Manuscript Protector
+
+This is a test plain text file for verifying the protection workflow.
+
+Chapter 1: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+Chapter 2: Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+Duis aute irure dolor in reprehenderit in voluptate velit.
+
+End of test sample.
